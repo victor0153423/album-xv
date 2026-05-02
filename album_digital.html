@@ -2,9 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Álbum Digital</title>
 
 <style>
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
   font-family: Arial, sans-serif;
@@ -14,12 +19,12 @@ body{
 /* HEADER */
 .header{
   text-align:center;
-  padding:40px 20px 10px;
+  padding:25px 10px 5px;
 }
 
 .header h1{
   margin:0;
-  font-size:32px;
+  font-size:clamp(22px, 5vw, 32px);
   font-weight:700;
 }
 
@@ -27,26 +32,28 @@ body{
 .upload-area{
   display:flex;
   justify-content:center;
-  margin:15px 0;
+  margin:10px 0;
 }
 
 .upload-btn{
   background:linear-gradient(90deg,#d08a7b,#e6a39a);
   color:#fff;
   border:none;
-  padding:10px 18px;
+  padding:12px 18px;
   border-radius:25px;
   font-weight:600;
   cursor:pointer;
   box-shadow:0 3px 8px rgba(0,0,0,0.1);
+  width:90%;
+  max-width:300px;
 }
 
 /* PANEL */
 .panel{
   background:#fff;
-  margin:20px;
-  padding:20px;
-  border-radius:15px;
+  margin:10px;
+  padding:12px;
+  border-radius:14px;
   box-shadow:0 3px 12px rgba(0,0,0,0.08);
 }
 
@@ -55,20 +62,22 @@ body{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  font-size:14px;
+  font-size:13px;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
 /* BOTONES ICONO */
 .view-buttons{
   display:flex;
-  gap:10px;
+  gap:8px;
 }
 
 .icon-btn{
   background:#fff;
   border:1px solid #caa08f;
   border-radius:50%;
-  padding:8px;
+  padding:6px;
   cursor:pointer;
   display:flex;
   align-items:center;
@@ -83,13 +92,9 @@ body{
 /* GALERÍA */
 .gallery{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
-  margin-top:15px;
-}
-
-.gallery.one{
   grid-template-columns:1fr;
+  gap:10px;
+  margin-top:15px;
 }
 
 /* CARD */
@@ -106,11 +111,33 @@ body{
 }
 
 .card .info{
-  padding:10px;
-  font-size:13px;
+  padding:8px;
+  font-size:12px;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  gap:10px;
+}
+
+/* TABLET / ESCRITORIO */
+@media (min-width: 700px){
+  .panel{
+    margin:20px;
+    padding:20px;
+  }
+
+  .gallery{
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+  }
+
+  .view{
+    font-size:14px;
+  }
+
+  .card .info{
+    font-size:13px;
+  }
 }
 </style>
 
@@ -118,12 +145,10 @@ body{
 
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <h1>Álbum Digital XV</h1>
 </div>
 
-<!-- BOTÓN SUBIR -->
 <div class="upload-area">
   <input type="file" id="fileInput" hidden onchange="uploadImage()">
   <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
@@ -131,16 +156,14 @@ body{
   </button>
 </div>
 
-<!-- PANEL -->
 <div class="panel">
 
   <div class="view">
 
     <div class="view-buttons">
 
-      <!-- ICONOS ORIGINALES -->
       <button class="icon-btn" onclick="setOneColumn()" title="1 columna">
-        <svg width="20" height="20" viewBox="0 0 24 24">
+        <svg width="18" height="18" viewBox="0 0 24 24">
           <rect x="3" y="5" width="18" height="2" fill="#000"/>
           <rect x="3" y="11" width="18" height="2" fill="#000"/>
           <rect x="3" y="17" width="18" height="2" fill="#000"/>
@@ -148,7 +171,7 @@ body{
       </button>
 
       <button class="icon-btn" onclick="setTwoColumns()" title="2 columnas">
-        <svg width="20" height="20" viewBox="0 0 24 24">
+        <svg width="18" height="18" viewBox="0 0 24 24">
           <rect x="3" y="3" width="8" height="8" fill="#000"/>
           <rect x="13" y="3" width="8" height="8" fill="#000"/>
           <rect x="3" y="13" width="8" height="8" fill="#000"/>
@@ -162,21 +185,20 @@ body{
 
   </div>
 
-  <!-- GALERÍA -->
   <div class="gallery" id="gallery"></div>
 
 </div>
 
 <script>
 function setOneColumn(){
-  document.getElementById("gallery").classList.add("one");
+  document.getElementById("gallery").style.gridTemplateColumns = "1fr";
 }
 
 function setTwoColumns(){
-  document.getElementById("gallery").classList.remove("one");
+  document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* ❤️ LIKE CON CONTADOR */
+/* LIKE */
 function like(el){
 
   let container = el.parentElement;
@@ -193,7 +215,7 @@ function like(el){
   }
 }
 
-/* 🚀 SUBIDA */
+/* SUBIR IMAGEN */
 async function uploadImage(){
 
   const file = document.getElementById("fileInput").files[0];
@@ -228,13 +250,11 @@ async function uploadImage(){
 
       <div style="display:flex;gap:10px;align-items:center;">
 
-        <!-- LIKE + CONTADOR -->
         <div style="display:flex;align-items:center;gap:5px;cursor:pointer;">
           <span onclick="like(this)" style="font-size:18px;">🤍</span>
           <span class="like-count">0</span>
         </div>
 
-        <!-- DESCARGA -->
         <a href="${url}" download target="_blank" style="font-size:16px;text-decoration:none;">
           📥
         </a>
