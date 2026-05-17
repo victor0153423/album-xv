@@ -222,14 +222,6 @@ import {
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
 /* FIREBASE CONFIG */
 
 const firebaseConfig = {
@@ -251,8 +243,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
-
-const storage = getStorage(app);
 
 /* COLUMNAS */
 
@@ -359,7 +349,7 @@ window.downloadFile = async function(url, tipo){
 
 }
 
-/* SUBIR ARCHIVO */
+/* SUBIR FOTO O VIDEO */
 
 window.uploadFile = async function(){
 
@@ -376,20 +366,42 @@ window.uploadFile = async function(){
     const tipo =
       isVideo ? "video" : "imagen";
 
-    const fileName =
-      Date.now() + "_" + file.name;
+    const formData = new FormData();
 
-    const storageRef =
-      ref(storage, "archivos/" + fileName);
+    formData.append("file", file);
 
-    await uploadBytes(storageRef, file);
+    formData.append(
+      "upload_preset",
+      "album_xv"
+    );
 
-    const url =
-      await getDownloadURL(storageRef);
+    const endpoint =
+      isVideo
+      ?
+      "https://api.cloudinary.com/v1_1/djaojazw9/video/upload"
+      :
+      "https://api.cloudinary.com/v1_1/djaojazw9/image/upload";
+
+    const response = await fetch(endpoint,{
+      method:"POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if(!data.secure_url){
+
+      console.log(data);
+
+      alert("Error al subir archivo");
+
+      return;
+
+    }
 
     await addDoc(collection(db,"fotos"),{
 
-      url: url,
+      url: data.secure_url,
 
       tipo: tipo,
 
@@ -430,8 +442,6 @@ onSnapshot(q,(snapshot)=>{
   snapshot.forEach((docSnap)=>{
 
     const foto = docSnap.data();
-
-    /* IGNORAR DOCUMENTOS ROTOS */
 
     if(!foto.url) return;
 
