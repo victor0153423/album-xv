@@ -16,6 +16,7 @@ body{
   background:#f7eadb;
 }
 
+/* HEADER */
 .header{
   text-align:center;
   padding:25px 10px 5px;
@@ -27,6 +28,7 @@ body{
   font-weight:700;
 }
 
+/* BOTÓN SUBIR */
 .upload-area{
   display:flex;
   justify-content:center;
@@ -46,6 +48,7 @@ body{
   max-width:300px;
 }
 
+/* PANEL */
 .panel{
   background:#fff;
   margin:10px;
@@ -54,6 +57,7 @@ body{
   box-shadow:0 3px 12px rgba(0,0,0,0.08);
 }
 
+/* HEADER DE GALERÍA */
 .view{
   display:flex;
   justify-content:space-between;
@@ -63,6 +67,7 @@ body{
   gap:10px;
 }
 
+/* BOTONES ICONO */
 .view-buttons{
   display:flex;
   gap:8px;
@@ -84,6 +89,7 @@ body{
   transform:scale(1.05);
 }
 
+/* GALERÍA */
 .gallery{
   display:grid;
   grid-template-columns:1fr;
@@ -91,15 +97,16 @@ body{
   margin-top:15px;
 }
 
+/* CARD */
 .card{
+  position:relative;
   border-radius:12px;
   overflow:hidden;
   box-shadow:0 3px 10px rgba(0,0,0,0.08);
   background:#fff;
 }
 
-.card img,
-.card video{
+.card img{
   width:100%;
   display:block;
 }
@@ -113,7 +120,28 @@ body{
   gap:10px;
 }
 
+/* ❌ BOTÓN ELIMINAR */
+.delete-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  background:red;
+  color:white;
+  border:none;
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  font-weight:bold;
+  cursor:pointer;
+  z-index:10;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* TABLET / ESCRITORIO */
 @media (min-width: 700px){
+
   .panel{
     margin:20px;
     padding:20px;
@@ -131,6 +159,7 @@ body{
   .card .info{
     font-size:13px;
   }
+
 }
 </style>
 
@@ -148,7 +177,7 @@ body{
     type="file"
     id="fileInput"
     hidden
-    accept="image/*,video/mp4,video/quicktime"
+    accept="image/*"
     onchange="uploadFile()"
   >
 
@@ -156,7 +185,7 @@ body{
     class="upload-btn"
     onclick="document.getElementById('fileInput').click()"
   >
-    Subir Foto o Video
+    Subir Foto
   </button>
 
 </div>
@@ -206,7 +235,8 @@ import {
   orderBy,
   updateDoc,
   doc,
-  getDoc
+  getDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -221,6 +251,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* COLUMNAS */
 window.setOneColumn = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "1fr";
 }
@@ -229,7 +260,73 @@ window.setTwoColumns = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* 🔥 SUBIDA CON COMPRESIÓN REAL */
+/* ELIMINAR */
+window.deletePhoto = async function(id){
+
+  if(!confirm("¿Seguro que quieres eliminar esta foto?")) return;
+
+  try{
+    await deleteDoc(doc(db,"fotos",id));
+  }catch(error){
+    console.log(error);
+    alert("Error al eliminar");
+  }
+}
+
+/* LIKE */
+window.likePhoto = async function(id){
+
+  const likedPhotos =
+    JSON.parse(localStorage.getItem("likedPhotos")) || [];
+
+  const refDoc = doc(db,"fotos",id);
+  const snapshot = await getDoc(refDoc);
+
+  if(!snapshot.exists()) return;
+
+  const data = snapshot.data();
+  let likes = data.likes || 0;
+
+  const alreadyLiked = likedPhotos.includes(id);
+
+  if(alreadyLiked){
+    likes = Math.max(0, likes - 1);
+    const updated = likedPhotos.filter(p => p !== id);
+    localStorage.setItem("likedPhotos", JSON.stringify(updated));
+  } else {
+    likes += 1;
+    likedPhotos.push(id);
+    localStorage.setItem("likedPhotos", JSON.stringify(likedPhotos));
+  }
+
+  await updateDoc(refDoc,{ likes });
+
+}
+
+/* DESCARGAR */
+window.downloadFile = async function(url){
+
+  try{
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = "foto.jpg";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(blobUrl);
+
+  }catch(error){
+    alert("No se pudo descargar");
+  }
+}
+
+/* SUBIR SOLO IMÁGENES */
 window.uploadFile = async function(){
 
   const file = document.getElementById("fileInput").files[0];
@@ -237,49 +334,34 @@ window.uploadFile = async function(){
 
   try{
 
-    const isVideo = file.type.startsWith("video");
-
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", "album_video");
 
-    const endpoint = isVideo
-      ? "https://api.cloudinary.com/v1_1/djaojazw9/video/upload"
-      : "https://api.cloudinary.com/v1_1/djaojazw9/image/upload";
-
-    const response = await fetch(endpoint,{
-      method:"POST",
-      body: formData
-    });
+    const response = await fetch(
+      "https://api.cloudinary.com/v1_1/djaojazw9/image/upload",
+      { method:"POST", body: formData }
+    );
 
     const data = await response.json();
 
     if(!data.secure_url){
-      alert("Error al subir archivo");
+      alert("Error al subir imagen");
       return;
     }
 
-    /* 🔥 COMPRESIÓN REAL CLOUDINARY */
-    const compressedVideo = isVideo
-      ? data.secure_url.replace(
-          "/upload/",
-          "/upload/q_auto:low,vc_auto,f_mp4/"
-        )
-      : data.secure_url;
-
     await addDoc(collection(db,"fotos"),{
-      url: compressedVideo,
-      tipo: isVideo ? "video" : "imagen",
+      url: data.secure_url,
       likes: 0,
       fecha: Date.now()
     });
 
     document.getElementById("fileInput").value = "";
-    alert("Archivo subido correctamente");
+    alert("Imagen subida correctamente");
 
   }catch(error){
     console.log(error);
-    alert("Error al subir archivo");
+    alert("Error al subir imagen");
   }
 
 };
@@ -295,13 +377,38 @@ onSnapshot(q,(snapshot)=>{
   snapshot.forEach((docSnap)=>{
 
     const foto = docSnap.data();
+    const id = docSnap.id;
+
+    const liked =
+      JSON.parse(localStorage.getItem("likedPhotos")) || [];
+
+    const isLiked = liked.includes(id);
 
     const div = document.createElement("div");
     div.className = "card";
 
-    div.innerHTML = foto.tipo === "video"
-      ? `<video src="${foto.url}" controls></video>`
-      : `<img src="${foto.url}">`;
+    div.innerHTML = `
+      <button class="delete-btn" onclick="deletePhoto('${id}')">×</button>
+
+      <img src="${foto.url}">
+
+      <div class="info">
+        <span>Invitado</span>
+
+        <div style="display:flex;gap:10px;align-items:center;">
+
+          <div onclick="likePhoto('${id}')" style="cursor:pointer;">
+            ${isLiked ? "❤️" : "🤍"}
+            ${foto.likes || 0}
+          </div>
+
+          <div onclick="downloadFile('${foto.url}')" style="cursor:pointer;">
+            📥
+          </div>
+
+        </div>
+      </div>
+    `;
 
     gallery.appendChild(div);
 
