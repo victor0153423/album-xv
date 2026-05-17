@@ -151,6 +151,7 @@ body{
 
 <div class="upload-area">
   <input type="file" id="fileInput" hidden onchange="uploadImage()">
+
   <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
     Subir Foto
   </button>
@@ -189,41 +190,84 @@ body{
 
 </div>
 
-<script>
-function setOneColumn(){
+<script type="module">
+
+/* FIREBASE */
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  updateDoc,
+  doc,
+  increment
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* CONFIG FIREBASE */
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyCVA5KPZG40aXoWCukSc2ON1GHovv24P30",
+
+  authDomain: "album-xv-ec57b.firebaseapp.com",
+
+  projectId: "album-xv-ec57b",
+
+  storageBucket: "album-xv-ec57b.firebasestorage.app",
+
+  messagingSenderId: "826736955809",
+
+  appId: "1:826736955809:web:4303661d17561dff097be0"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+/* COLUMNAS */
+
+window.setOneColumn = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "1fr";
 }
 
-function setTwoColumns(){
+window.setTwoColumns = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
 /* LIKE */
-function like(el){
 
-  let container = el.parentElement;
-  let counter = container.querySelector(".like-count");
+window.likePhoto = async function(id){
 
-  let isLiked = el.textContent === "❤️";
+  const ref = doc(db,"fotos",id);
 
-  if(isLiked){
-    el.textContent = "🤍";
-    counter.textContent = parseInt(counter.textContent) - 1;
-  } else {
-    el.textContent = "❤️";
-    counter.textContent = parseInt(counter.textContent) + 1;
-  }
+  await updateDoc(ref,{
+    likes: increment(1)
+  });
+
 }
 
 /* SUBIR IMAGEN */
-async function uploadImage(){
+
+window.uploadImage = async function(){
 
   const file = document.getElementById("fileInput").files[0];
+
   if(!file) return;
 
   const formData = new FormData();
+
   formData.append("file", file);
+
   formData.append("upload_preset", "album_xv");
+
+  /* CLOUDINARY */
 
   const res = await fetch(
     "https://api.cloudinary.com/v1_1/djaojazw9/image/upload",
@@ -234,38 +278,85 @@ async function uploadImage(){
   );
 
   const data = await res.json();
+
   const url = data.secure_url;
+
+  /* GUARDAR EN FIREBASE */
+
+  await addDoc(collection(db,"fotos"),{
+
+    url: url,
+
+    likes: 0,
+
+    fecha: Date.now()
+
+  });
+
+}
+
+/* MOSTRAR FOTOS EN TIEMPO REAL */
+
+const q = query(
+  collection(db,"fotos"),
+  orderBy("fecha","desc")
+);
+
+onSnapshot(q,(snapshot)=>{
 
   const gallery = document.getElementById("gallery");
 
-  const div = document.createElement("div");
-  div.className = "card";
+  gallery.innerHTML = "";
 
-  div.innerHTML = `
-    <img src="${url}">
+  snapshot.forEach((docSnap)=>{
 
-    <div class="info">
+    const foto = docSnap.data();
 
-      <span>Invitado</span>
+    const id = docSnap.id;
 
-      <div style="display:flex;gap:10px;align-items:center;">
+    const div = document.createElement("div");
 
-        <div style="display:flex;align-items:center;gap:5px;cursor:pointer;">
-          <span onclick="like(this)" style="font-size:18px;">🤍</span>
-          <span class="like-count">0</span>
+    div.className = "card";
+
+    div.innerHTML = `
+
+      <img src="${foto.url}">
+
+      <div class="info">
+
+        <span>Invitado</span>
+
+        <div style="display:flex;gap:10px;align-items:center;">
+
+          <div
+            style="display:flex;align-items:center;gap:5px;cursor:pointer;"
+            onclick="likePhoto('${id}')"
+          >
+            <span style="font-size:18px;">❤️</span>
+            <span class="like-count">${foto.likes}</span>
+          </div>
+
+          <a
+            href="${foto.url}"
+            download
+            target="_blank"
+            style="font-size:16px;text-decoration:none;"
+          >
+            📥
+          </a>
+
         </div>
-
-        <a href="${url}" download target="_blank" style="font-size:16px;text-decoration:none;">
-          📥
-        </a>
 
       </div>
 
-    </div>
-  `;
+    `;
 
-  gallery.appendChild(div);
-}
+    gallery.appendChild(div);
+
+  });
+
+});
+
 </script>
 
 </body>
