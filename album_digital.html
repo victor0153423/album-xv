@@ -16,7 +16,6 @@ body{
   background:#f7eadb;
 }
 
-/* HEADER */
 .header{
   text-align:center;
   padding:25px 10px 5px;
@@ -28,7 +27,6 @@ body{
   font-weight:700;
 }
 
-/* BOTÓN SUBIR */
 .upload-area{
   display:flex;
   justify-content:center;
@@ -48,7 +46,6 @@ body{
   max-width:300px;
 }
 
-/* PANEL */
 .panel{
   background:#fff;
   margin:10px;
@@ -57,7 +54,6 @@ body{
   box-shadow:0 3px 12px rgba(0,0,0,0.08);
 }
 
-/* HEADER DE GALERÍA */
 .view{
   display:flex;
   justify-content:space-between;
@@ -67,7 +63,6 @@ body{
   gap:10px;
 }
 
-/* BOTONES ICONO */
 .view-buttons{
   display:flex;
   gap:8px;
@@ -89,7 +84,6 @@ body{
   transform:scale(1.05);
 }
 
-/* GALERÍA */
 .gallery{
   display:grid;
   grid-template-columns:1fr;
@@ -97,7 +91,6 @@ body{
   margin-top:15px;
 }
 
-/* CARD */
 .card{
   border-radius:12px;
   overflow:hidden;
@@ -120,9 +113,7 @@ body{
   gap:10px;
 }
 
-/* TABLET / ESCRITORIO */
 @media (min-width: 700px){
-
   .panel{
     margin:20px;
     padding:20px;
@@ -140,7 +131,6 @@ body{
   .card .info{
     font-size:13px;
   }
-
 }
 </style>
 
@@ -206,9 +196,7 @@ body{
 
 <script type="module">
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
   collection,
@@ -219,313 +207,101 @@ import {
   updateDoc,
   doc,
   getDoc
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-/* FIREBASE CONFIG */
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyCVA5KPZG40aXoWCukSc2ON1GHovv24P30",
-
   authDomain: "album-xv-ec57b.firebaseapp.com",
-
   projectId: "album-xv-ec57b",
-
   storageBucket: "album-xv-ec57b.appspot.com",
-
   messagingSenderId: "826736955809",
-
   appId: "1:826736955809:web:4303661d17561dff097be0"
-
 };
 
 const app = initializeApp(firebaseConfig);
-
 const db = getFirestore(app);
 
-/* COLUMNAS */
-
 window.setOneColumn = function(){
-
-  document.getElementById("gallery")
-    .style.gridTemplateColumns = "1fr";
-
+  document.getElementById("gallery").style.gridTemplateColumns = "1fr";
 }
 
 window.setTwoColumns = function(){
-
-  document.getElementById("gallery")
-    .style.gridTemplateColumns = "repeat(2,1fr)";
-
+  document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* LIKE */
-
-window.likePhoto = async function(id){
-
-  const likedPhotos =
-    JSON.parse(localStorage.getItem("likedPhotos")) || [];
-
-  const refDoc = doc(db,"fotos",id);
-
-  const snapshot = await getDoc(refDoc);
-
-  if(!snapshot.exists()) return;
-
-  const data = snapshot.data();
-
-  let likes = data.likes || 0;
-
-  const alreadyLiked = likedPhotos.includes(id);
-
-  if(alreadyLiked){
-
-    likes = Math.max(0, likes - 1);
-
-    const updated =
-      likedPhotos.filter(photoId => photoId !== id);
-
-    localStorage.setItem(
-      "likedPhotos",
-      JSON.stringify(updated)
-    );
-
-  } else {
-
-    likes += 1;
-
-    likedPhotos.push(id);
-
-    localStorage.setItem(
-      "likedPhotos",
-      JSON.stringify(likedPhotos)
-    );
-
-  }
-
-  await updateDoc(refDoc,{
-    likes: likes
-  });
-
-}
-
-/* DESCARGAR */
-
-window.downloadFile = async function(url, tipo){
-
-  try{
-
-    const response = await fetch(url);
-
-    const blob = await response.blob();
-
-    const blobUrl = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-
-    a.href = blobUrl;
-
-    a.download =
-      tipo === "video"
-      ? "video.mp4"
-      : "foto.jpg";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    a.remove();
-
-    window.URL.revokeObjectURL(blobUrl);
-
-  }catch(error){
-
-    alert("No se pudo descargar");
-
-    console.log(error);
-
-  }
-
-}
-
-/* SUBIR FOTO O VIDEO */
-
+/* 🔥 SUBIDA CON COMPRESIÓN REAL */
 window.uploadFile = async function(){
 
-  const file =
-    document.getElementById("fileInput").files[0];
-
+  const file = document.getElementById("fileInput").files[0];
   if(!file) return;
 
   try{
 
-    const isVideo =
-      file.type.startsWith("video");
-
-    const tipo =
-      isVideo ? "video" : "imagen";
+    const isVideo = file.type.startsWith("video");
 
     const formData = new FormData();
-
     formData.append("file", file);
+    formData.append("upload_preset", "album_video");
 
-    formData.append(
-      "upload_preset",
-      "album_video"
-    );
-
-    const endpoint =
-      isVideo
-      ?
-      "https://api.cloudinary.com/v1_1/djaojazw9/video/upload"
-      :
-      "https://api.cloudinary.com/v1_1/djaojazw9/image/upload";
+    const endpoint = isVideo
+      ? "https://api.cloudinary.com/v1_1/djaojazw9/video/upload"
+      : "https://api.cloudinary.com/v1_1/djaojazw9/image/upload";
 
     const response = await fetch(endpoint,{
       method:"POST",
-      body: formData,
-      keepalive: true
+      body: formData
     });
 
     const data = await response.json();
 
     if(!data.secure_url){
-
-      console.log(data);
-
       alert("Error al subir archivo");
-
       return;
-
     }
 
+    /* 🔥 COMPRESIÓN REAL CLOUDINARY */
+    const compressedVideo = isVideo
+      ? data.secure_url.replace(
+          "/upload/",
+          "/upload/q_auto:low,vc_auto,f_mp4/"
+        )
+      : data.secure_url;
+
     await addDoc(collection(db,"fotos"),{
-
-      url: data.secure_url,
-
-      tipo: tipo,
-
+      url: compressedVideo,
+      tipo: isVideo ? "video" : "imagen",
       likes: 0,
-
       fecha: Date.now()
-
     });
 
     document.getElementById("fileInput").value = "";
-
     alert("Archivo subido correctamente");
 
   }catch(error){
-
     console.log(error);
-
     alert("Error al subir archivo");
-
   }
 
-}
+};
 
-/* MOSTRAR ARCHIVOS */
-
-const q = query(
-  collection(db,"fotos"),
-  orderBy("fecha","desc")
-);
+/* MOSTRAR */
+const q = query(collection(db,"fotos"), orderBy("fecha","desc"));
 
 onSnapshot(q,(snapshot)=>{
 
-  const gallery =
-    document.getElementById("gallery");
-
+  const gallery = document.getElementById("gallery");
   gallery.innerHTML = "";
 
   snapshot.forEach((docSnap)=>{
 
     const foto = docSnap.data();
 
-    if(!foto.url) return;
-
-    const id = docSnap.id;
-
-    const likedPhotos =
-      JSON.parse(localStorage.getItem("likedPhotos")) || [];
-
-    const isLiked =
-      likedPhotos.includes(id);
-
-    const div =
-      document.createElement("div");
-
+    const div = document.createElement("div");
     div.className = "card";
 
-    div.innerHTML = `
-
-      ${
-        foto.tipo === "video"
-
-        ?
-
-        `<video
-          src="${foto.url.replace(
-            '/upload/',
-            '/upload/q_auto:low,f_auto/'
-          )}"
-          controls
-        ></video>`
-
-        :
-
-        `<img src="${foto.url}">`
-      }
-
-      <div class="info">
-
-        <span>Invitado</span>
-
-        <div
-          style="
-            display:flex;
-            gap:10px;
-            align-items:center;
-          "
-        >
-
-          <div
-            style="
-              display:flex;
-              align-items:center;
-              gap:5px;
-              cursor:pointer;
-            "
-            onclick="likePhoto('${id}')"
-          >
-
-            <span style="font-size:18px;">
-              ${isLiked ? "❤️" : "🤍"}
-            </span>
-
-            <span class="like-count">
-              ${foto.likes || 0}
-            </span>
-
-          </div>
-
-          <div
-            onclick="downloadFile('${foto.url}','${foto.tipo}')"
-            style="
-              font-size:16px;
-              cursor:pointer;
-            "
-          >
-            📥
-          </div>
-
-        </div>
-
-      </div>
-
-    `;
+    div.innerHTML = foto.tipo === "video"
+      ? `<video src="${foto.url}" controls></video>`
+      : `<img src="${foto.url}">`;
 
     gallery.appendChild(div);
 
