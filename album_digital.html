@@ -363,6 +363,25 @@ window.uploadFile = async function(){
     const isVideo =
       file.type.startsWith("video");
 
+    /* LIMITE DE VIDEO */
+
+    if(isVideo){
+
+      const maxSize =
+        100 * 1024 * 1024;
+
+      if(file.size > maxSize){
+
+        alert(
+          "El video supera los 100MB"
+        );
+
+        return;
+
+      }
+
+    }
+
     const tipo =
       isVideo ? "video" : "imagen";
 
@@ -466,7 +485,10 @@ onSnapshot(q,(snapshot)=>{
         ?
 
         `<video
-          src="${foto.url}"
+          src="${foto.url.replace(
+            '/upload/',
+            '/upload/q_auto:low,f_auto/'
+          )}"
           controls
         ></video>`
 
