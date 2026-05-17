@@ -206,8 +206,6 @@ body{
 
 <script type="module">
 
-/* FIREBASE */
-
 import { initializeApp }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -232,7 +230,7 @@ import {
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-/* CONFIG FIREBASE */
+/* FIREBASE CONFIG */
 
 const firebaseConfig = {
 
@@ -242,7 +240,7 @@ const firebaseConfig = {
 
   projectId: "album-xv-ec57b",
 
-  storageBucket: "album-xv-ec57b.firebasestorage.app",
+  storageBucket: "album-xv-ec57b.appspot.com",
 
   messagingSenderId: "826736955809",
 
@@ -326,32 +324,42 @@ window.likePhoto = async function(id){
 
 window.downloadFile = async function(url, tipo){
 
-  const response = await fetch(url);
+  try{
 
-  const blob = await response.blob();
+    const response = await fetch(url);
 
-  const blobUrl = window.URL.createObjectURL(blob);
+    const blob = await response.blob();
 
-  const a = document.createElement("a");
+    const blobUrl = window.URL.createObjectURL(blob);
 
-  a.href = blobUrl;
+    const a = document.createElement("a");
 
-  a.download =
-    tipo === "video"
-    ? "video.mp4"
-    : "foto.jpg";
+    a.href = blobUrl;
 
-  document.body.appendChild(a);
+    a.download =
+      tipo === "video"
+      ? "video.mp4"
+      : "foto.jpg";
 
-  a.click();
+    document.body.appendChild(a);
 
-  a.remove();
+    a.click();
 
-  window.URL.revokeObjectURL(blobUrl);
+    a.remove();
+
+    window.URL.revokeObjectURL(blobUrl);
+
+  }catch(error){
+
+    alert("No se pudo descargar");
+
+    console.log(error);
+
+  }
 
 }
 
-/* SUBIR FOTO O VIDEO */
+/* SUBIR ARCHIVO */
 
 window.uploadFile = async function(){
 
@@ -360,34 +368,48 @@ window.uploadFile = async function(){
 
   if(!file) return;
 
-  const isVideo =
-    file.type.startsWith("video");
+  try{
 
-  const tipo =
-    isVideo ? "video" : "imagen";
+    const isVideo =
+      file.type.startsWith("video");
 
-  const fileName =
-    Date.now() + "_" + file.name;
+    const tipo =
+      isVideo ? "video" : "imagen";
 
-  const storageRef =
-    ref(storage, "archivos/" + fileName);
+    const fileName =
+      Date.now() + "_" + file.name;
 
-  await uploadBytes(storageRef, file);
+    const storageRef =
+      ref(storage, "archivos/" + fileName);
 
-  const url =
-    await getDownloadURL(storageRef);
+    await uploadBytes(storageRef, file);
 
-  await addDoc(collection(db,"fotos"),{
+    const url =
+      await getDownloadURL(storageRef);
 
-    url: url,
+    await addDoc(collection(db,"fotos"),{
 
-    tipo: tipo,
+      url: url,
 
-    likes: 0,
+      tipo: tipo,
 
-    fecha: Date.now()
+      likes: 0,
 
-  });
+      fecha: Date.now()
+
+    });
+
+    document.getElementById("fileInput").value = "";
+
+    alert("Archivo subido correctamente");
+
+  }catch(error){
+
+    console.log(error);
+
+    alert("Error al subir archivo");
+
+  }
 
 }
 
@@ -408,6 +430,10 @@ onSnapshot(q,(snapshot)=>{
   snapshot.forEach((docSnap)=>{
 
     const foto = docSnap.data();
+
+    /* IGNORAR DOCUMENTOS ROTOS */
+
+    if(!foto.url) return;
 
     const id = docSnap.id;
 
@@ -466,7 +492,7 @@ onSnapshot(q,(snapshot)=>{
             </span>
 
             <span class="like-count">
-              ${foto.likes}
+              ${foto.likes || 0}
             </span>
 
           </div>
