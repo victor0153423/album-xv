@@ -158,7 +158,7 @@ body{
     type="file"
     id="fileInput"
     hidden
-    accept="image/*,video/*"
+    accept="image/*,video/mp4,video/quicktime"
     onchange="uploadFile()"
   >
 
@@ -363,25 +363,6 @@ window.uploadFile = async function(){
     const isVideo =
       file.type.startsWith("video");
 
-    /* LIMITE DE VIDEO */
-
-    if(isVideo){
-
-      const maxSize =
-        100 * 1024 * 1024;
-
-      if(file.size > maxSize){
-
-        alert(
-          "El video supera los 100MB"
-        );
-
-        return;
-
-      }
-
-    }
-
     const tipo =
       isVideo ? "video" : "imagen";
 
@@ -391,7 +372,7 @@ window.uploadFile = async function(){
 
     formData.append(
       "upload_preset",
-      "album_xv"
+      "album_video"
     );
 
     const endpoint =
@@ -403,7 +384,8 @@ window.uploadFile = async function(){
 
     const response = await fetch(endpoint,{
       method:"POST",
-      body: formData
+      body: formData,
+      keepalive: true
     });
 
     const data = await response.json();
