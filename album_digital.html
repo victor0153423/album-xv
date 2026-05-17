@@ -205,7 +205,7 @@ import {
   orderBy,
   updateDoc,
   doc,
-  increment
+  getDoc
 }
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -245,10 +245,48 @@ window.setTwoColumns = function(){
 
 window.likePhoto = async function(id){
 
+  const likedPhotos =
+    JSON.parse(localStorage.getItem("likedPhotos")) || [];
+
   const ref = doc(db,"fotos",id);
 
+  const snapshot = await getDoc(ref);
+
+  if(!snapshot.exists()) return;
+
+  const data = snapshot.data();
+
+  let likes = data.likes || 0;
+
+  const alreadyLiked = likedPhotos.includes(id);
+
+  if(alreadyLiked){
+
+    likes = Math.max(0, likes - 1);
+
+    const updated =
+      likedPhotos.filter(photoId => photoId !== id);
+
+    localStorage.setItem(
+      "likedPhotos",
+      JSON.stringify(updated)
+    );
+
+  } else {
+
+    likes += 1;
+
+    likedPhotos.push(id);
+
+    localStorage.setItem(
+      "likedPhotos",
+      JSON.stringify(likedPhotos)
+    );
+
+  }
+
   await updateDoc(ref,{
-    likes: increment(1)
+    likes: likes
   });
 
 }
@@ -314,6 +352,11 @@ onSnapshot(q,(snapshot)=>{
 
     const id = docSnap.id;
 
+    const likedPhotos =
+      JSON.parse(localStorage.getItem("likedPhotos")) || [];
+
+    const isLiked = likedPhotos.includes(id);
+
     const div = document.createElement("div");
 
     div.className = "card";
@@ -332,7 +375,10 @@ onSnapshot(q,(snapshot)=>{
             style="display:flex;align-items:center;gap:5px;cursor:pointer;"
             onclick="likePhoto('${id}')"
           >
-            <span style="font-size:18px;">❤️</span>
+            <span style="font-size:18px;">
+              ${isLiked ? "❤️" : "🤍"}
+            </span>
+
             <span class="like-count">${foto.likes}</span>
           </div>
 
