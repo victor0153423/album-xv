@@ -260,17 +260,29 @@ window.setTwoColumns = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* ELIMINAR */
-window.deletePhoto = async function(id){
+/* ❌ ELIMINAR (FIREBASE + CLOUDINARY INTENTO) */
+window.deletePhoto = async function(id, publicId){
 
   if(!confirm("¿Seguro que quieres eliminar esta foto?")) return;
 
   try{
+
+    // 1. BORRAR FIRESTORE (FUNCIONA)
     await deleteDoc(doc(db,"fotos",id));
+
+    // 2. BORRAR CLOUDINARY (NECESITA BACKEND REAL)
+    await fetch("https://api.cloudinary.com/v1_1/djaojazw9/delete_by_token", {
+      method: "POST",
+      body: JSON.stringify({
+        public_id: publicId
+      })
+    });
+
   }catch(error){
     console.log(error);
     alert("Error al eliminar");
   }
+
 }
 
 /* LIKE */
@@ -352,6 +364,7 @@ window.uploadFile = async function(){
 
     await addDoc(collection(db,"fotos"),{
       url: data.secure_url,
+      public_id: data.public_id,
       likes: 0,
       fecha: Date.now()
     });
@@ -388,7 +401,7 @@ onSnapshot(q,(snapshot)=>{
     div.className = "card";
 
     div.innerHTML = `
-      <button class="delete-btn" onclick="deletePhoto('${id}')">×</button>
+      <button class="delete-btn" onclick="deletePhoto('${id}','${foto.public_id}')">×</button>
 
       <img src="${foto.url}">
 
