@@ -105,7 +105,8 @@ body{
   background:#fff;
 }
 
-.card img{
+.card img,
+.card video{
   width:100%;
   display:block;
 }
@@ -121,6 +122,7 @@ body{
 
 /* TABLET / ESCRITORIO */
 @media (min-width: 700px){
+
   .panel{
     margin:20px;
     padding:20px;
@@ -138,6 +140,7 @@ body{
   .card .info{
     font-size:13px;
   }
+
 }
 </style>
 
@@ -150,11 +153,22 @@ body{
 </div>
 
 <div class="upload-area">
-  <input type="file" id="fileInput" hidden onchange="uploadImage()">
 
-  <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
-    Subir Foto
+  <input
+    type="file"
+    id="fileInput"
+    hidden
+    accept="image/*,video/*"
+    onchange="uploadFile()"
+  >
+
+  <button
+    class="upload-btn"
+    onclick="document.getElementById('fileInput').click()"
+  >
+    Subir Foto o Video
   </button>
+
 </div>
 
 <div class="panel">
@@ -194,7 +208,8 @@ body{
 
 /* FIREBASE */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
   getFirestore,
@@ -244,11 +259,17 @@ const storage = getStorage(app);
 /* COLUMNAS */
 
 window.setOneColumn = function(){
-  document.getElementById("gallery").style.gridTemplateColumns = "1fr";
+
+  document.getElementById("gallery")
+    .style.gridTemplateColumns = "1fr";
+
 }
 
 window.setTwoColumns = function(){
-  document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
+
+  document.getElementById("gallery")
+    .style.gridTemplateColumns = "repeat(2,1fr)";
+
 }
 
 /* LIKE */
@@ -303,7 +324,7 @@ window.likePhoto = async function(id){
 
 /* DESCARGAR */
 
-window.downloadImage = async function(url){
+window.downloadFile = async function(url, tipo){
 
   const response = await fetch(url);
 
@@ -315,7 +336,10 @@ window.downloadImage = async function(url){
 
   a.href = blobUrl;
 
-  a.download = "foto.jpg";
+  a.download =
+    tipo === "video"
+    ? "video.mp4"
+    : "foto.jpg";
 
   document.body.appendChild(a);
 
@@ -327,19 +351,26 @@ window.downloadImage = async function(url){
 
 }
 
-/* SUBIR IMAGEN */
+/* SUBIR FOTO O VIDEO */
 
-window.uploadImage = async function(){
+window.uploadFile = async function(){
 
-  const file = document.getElementById("fileInput").files[0];
+  const file =
+    document.getElementById("fileInput").files[0];
 
   if(!file) return;
+
+  const isVideo =
+    file.type.startsWith("video");
+
+  const tipo =
+    isVideo ? "video" : "imagen";
 
   const fileName =
     Date.now() + "_" + file.name;
 
   const storageRef =
-    ref(storage, "fotos/" + fileName);
+    ref(storage, "archivos/" + fileName);
 
   await uploadBytes(storageRef, file);
 
@@ -350,6 +381,8 @@ window.uploadImage = async function(){
 
     url: url,
 
+    tipo: tipo,
+
     likes: 0,
 
     fecha: Date.now()
@@ -358,7 +391,7 @@ window.uploadImage = async function(){
 
 }
 
-/* MOSTRAR FOTOS */
+/* MOSTRAR ARCHIVOS */
 
 const q = query(
   collection(db,"fotos"),
@@ -367,7 +400,8 @@ const q = query(
 
 onSnapshot(q,(snapshot)=>{
 
-  const gallery = document.getElementById("gallery");
+  const gallery =
+    document.getElementById("gallery");
 
   gallery.innerHTML = "";
 
@@ -380,36 +414,69 @@ onSnapshot(q,(snapshot)=>{
     const likedPhotos =
       JSON.parse(localStorage.getItem("likedPhotos")) || [];
 
-    const isLiked = likedPhotos.includes(id);
+    const isLiked =
+      likedPhotos.includes(id);
 
-    const div = document.createElement("div");
+    const div =
+      document.createElement("div");
 
     div.className = "card";
 
     div.innerHTML = `
 
-      <img src="${foto.url}">
+      ${
+        foto.tipo === "video"
+
+        ?
+
+        `<video
+          src="${foto.url}"
+          controls
+        ></video>`
+
+        :
+
+        `<img src="${foto.url}">`
+      }
 
       <div class="info">
 
         <span>Invitado</span>
 
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div
+          style="
+            display:flex;
+            gap:10px;
+            align-items:center;
+          "
+        >
 
           <div
-            style="display:flex;align-items:center;gap:5px;cursor:pointer;"
+            style="
+              display:flex;
+              align-items:center;
+              gap:5px;
+              cursor:pointer;
+            "
             onclick="likePhoto('${id}')"
           >
+
             <span style="font-size:18px;">
               ${isLiked ? "❤️" : "🤍"}
             </span>
 
-            <span class="like-count">${foto.likes}</span>
+            <span class="like-count">
+              ${foto.likes}
+            </span>
+
           </div>
 
           <div
-            onclick="downloadImage('${foto.url}')"
-            style="font-size:16px;cursor:pointer;"
+            onclick="downloadFile('${foto.url}','${foto.tipo}')"
+            style="
+              font-size:16px;
+              cursor:pointer;
+            "
           >
             📥
           </div>
