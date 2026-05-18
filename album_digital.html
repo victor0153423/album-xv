@@ -226,6 +226,7 @@ body{
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 import {
   getFirestore,
   collection,
@@ -260,32 +261,27 @@ window.setTwoColumns = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* ❌ ELIMINAR (FIREBASE + CLOUDINARY INTENTO) */
-window.deletePhoto = async function(id, publicId){
+/* ❌ ELIMINAR SOLO FIRESTORE */
+window.deletePhoto = async function(id){
 
   if(!confirm("¿Seguro que quieres eliminar esta foto?")) return;
 
   try{
 
-    // 1. BORRAR FIRESTORE (FUNCIONA)
     await deleteDoc(doc(db,"fotos",id));
 
-    // 2. BORRAR CLOUDINARY (NECESITA BACKEND REAL)
-    await fetch("https://api.cloudinary.com/v1_1/djaojazw9/delete_by_token", {
-      method: "POST",
-      body: JSON.stringify({
-        public_id: publicId
-      })
-    });
+    alert("Foto eliminada");
 
   }catch(error){
+
     console.log(error);
     alert("Error al eliminar");
+
   }
 
 }
 
-/* LIKE */
+/* ❤️ LIKE */
 window.likePhoto = async function(id){
 
   const likedPhotos =
@@ -302,125 +298,198 @@ window.likePhoto = async function(id){
   const alreadyLiked = likedPhotos.includes(id);
 
   if(alreadyLiked){
+
     likes = Math.max(0, likes - 1);
-    const updated = likedPhotos.filter(p => p !== id);
-    localStorage.setItem("likedPhotos", JSON.stringify(updated));
+
+    const updated =
+      likedPhotos.filter(p => p !== id);
+
+    localStorage.setItem(
+      "likedPhotos",
+      JSON.stringify(updated)
+    );
+
   } else {
+
     likes += 1;
+
     likedPhotos.push(id);
-    localStorage.setItem("likedPhotos", JSON.stringify(likedPhotos));
+
+    localStorage.setItem(
+      "likedPhotos",
+      JSON.stringify(likedPhotos)
+    );
+
   }
 
   await updateDoc(refDoc,{ likes });
 
 }
 
-/* DESCARGAR */
+/* 📥 DESCARGAR */
 window.downloadFile = async function(url){
 
   try{
+
     const response = await fetch(url);
     const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
+
+    const blobUrl =
+      window.URL.createObjectURL(blob);
 
     const a = document.createElement("a");
+
     a.href = blobUrl;
     a.download = "foto.jpg";
 
     document.body.appendChild(a);
+
     a.click();
+
     a.remove();
 
     window.URL.revokeObjectURL(blobUrl);
 
   }catch(error){
+
+    console.log(error);
     alert("No se pudo descargar");
+
   }
+
 }
 
-/* SUBIR SOLO IMÁGENES */
+/* ⬆️ SUBIR SOLO IMÁGENES */
 window.uploadFile = async function(){
 
-  const file = document.getElementById("fileInput").files[0];
+  const file =
+    document.getElementById("fileInput").files[0];
+
   if(!file) return;
 
   try{
 
     const formData = new FormData();
+
     formData.append("file", file);
-    formData.append("upload_preset", "album_video");
+
+    formData.append(
+      "upload_preset",
+      "album_video"
+    );
 
     const response = await fetch(
       "https://api.cloudinary.com/v1_1/djaojazw9/image/upload",
-      { method:"POST", body: formData }
+      {
+        method:"POST",
+        body: formData
+      }
     );
 
     const data = await response.json();
 
     if(!data.secure_url){
+
       alert("Error al subir imagen");
       return;
+
     }
 
     await addDoc(collection(db,"fotos"),{
+
       url: data.secure_url,
       public_id: data.public_id,
       likes: 0,
       fecha: Date.now()
+
     });
 
     document.getElementById("fileInput").value = "";
+
     alert("Imagen subida correctamente");
 
   }catch(error){
+
     console.log(error);
     alert("Error al subir imagen");
+
   }
 
 };
 
-/* MOSTRAR */
-const q = query(collection(db,"fotos"), orderBy("fecha","desc"));
+/* 🖼️ MOSTRAR GALERÍA */
+const q =
+  query(
+    collection(db,"fotos"),
+    orderBy("fecha","desc")
+  );
 
 onSnapshot(q,(snapshot)=>{
 
-  const gallery = document.getElementById("gallery");
+  const gallery =
+    document.getElementById("gallery");
+
   gallery.innerHTML = "";
 
   snapshot.forEach((docSnap)=>{
 
     const foto = docSnap.data();
+
     const id = docSnap.id;
 
     const liked =
       JSON.parse(localStorage.getItem("likedPhotos")) || [];
 
-    const isLiked = liked.includes(id);
+    const isLiked =
+      liked.includes(id);
 
-    const div = document.createElement("div");
+    const div =
+      document.createElement("div");
+
     div.className = "card";
 
     div.innerHTML = `
-      <button class="delete-btn" onclick="deletePhoto('${id}','${foto.public_id}')">×</button>
+
+      <button
+        class="delete-btn"
+        onclick="deletePhoto('${id}')"
+      >
+        ×
+      </button>
 
       <img src="${foto.url}">
 
       <div class="info">
+
         <span>Invitado</span>
 
-        <div style="display:flex;gap:10px;align-items:center;">
+        <div
+          style="
+            display:flex;
+            gap:10px;
+            align-items:center;
+          "
+        >
 
-          <div onclick="likePhoto('${id}')" style="cursor:pointer;">
+          <div
+            onclick="likePhoto('${id}')"
+            style="cursor:pointer;"
+          >
             ${isLiked ? "❤️" : "🤍"}
             ${foto.likes || 0}
           </div>
 
-          <div onclick="downloadFile('${foto.url}')" style="cursor:pointer;">
+          <div
+            onclick="downloadFile('${foto.url}')"
+            style="cursor:pointer;"
+          >
             📥
           </div>
 
         </div>
+
       </div>
+
     `;
 
     gallery.appendChild(div);
