@@ -28,11 +28,13 @@ body{
   font-weight:700;
 }
 
-/* BOTÓN SUBIR */
+/* BOTONES SUBIR */
 .upload-area{
   display:flex;
   justify-content:center;
-  margin:10px 0;
+  gap:10px;
+  margin:10px;
+  flex-wrap:wrap;
 }
 
 .upload-btn{
@@ -45,7 +47,7 @@ body{
   cursor:pointer;
   box-shadow:0 3px 8px rgba(0,0,0,0.1);
   width:90%;
-  max-width:300px;
+  max-width:220px;
 }
 
 /* PANEL */
@@ -173,25 +175,35 @@ body{
 
 <div class="upload-area">
 
-  <!-- INPUT NORMAL -->
+  <!-- INPUT CÁMARA -->
   <input
     type="file"
-    id="fileInput"
+    id="cameraInput"
     hidden
     accept="image/*"
-    onchange="uploadFile()"
+    capture="environment"
+    onchange="uploadFile(this)"
   >
 
-    <button
+  <!-- INPUT GALERÍA -->
+  <input
+    type="file"
+    id="galleryInput"
+    hidden
+    accept="image/*"
+    onchange="uploadFile(this)"
+  >
+
+  <button
     class="upload-btn"
-    onclick="document.getElementById('fileInput').click()"
+    onclick="document.getElementById('cameraInput').click()"
   >
     Tomar Foto
   </button>
 
   <button
     class="upload-btn"
-    onclick="document.getElementById('fileInput').click()"
+    onclick="document.getElementById('galleryInput').click()"
   >
     Seleccionar Foto
   </button>
@@ -353,11 +365,10 @@ window.downloadFile = function(url){
 
 }
 
-/* ⬆️ SUBIR FOTO O GALERÍA */
-window.uploadFile = async function(){
+/* ⬆️ SUBIR FOTO */
+window.uploadFile = async function(input){
 
-  const file =
-    document.getElementById("fileInput").files[0];
+  const file = input.files[0];
 
   if(!file) return;
 
@@ -398,7 +409,7 @@ window.uploadFile = async function(){
 
     });
 
-    document.getElementById("fileInput").value = "";
+    input.value = "";
 
     alert("Imagen subida correctamente");
 
