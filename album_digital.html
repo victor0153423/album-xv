@@ -178,7 +178,7 @@ body{
     id="fileInput"
     hidden
     accept="image/*"
-    capture="environment"
+    capture
     onchange="uploadFile()"
   >
 
@@ -346,7 +346,7 @@ window.downloadFile = function(url){
 
 }
 
-/* ⬆️ SUBIR FOTO */
+/* ⬆️ SUBIR FOTO O IMAGEN */
 window.uploadFile = async function(){
 
   const file =
