@@ -178,6 +178,7 @@ body{
     id="fileInput"
     hidden
     accept="image/*"
+    capture="environment"
     onchange="uploadFile()"
   >
 
@@ -261,7 +262,7 @@ window.setTwoColumns = function(){
   document.getElementById("gallery").style.gridTemplateColumns = "repeat(2,1fr)";
 }
 
-/* ❌ ELIMINAR SOLO FIRESTORE */
+/* ❌ ELIMINAR */
 window.deletePhoto = async function(id){
 
   if(!confirm("¿Seguro que quieres eliminar esta foto?")) return;
@@ -327,39 +328,25 @@ window.likePhoto = async function(id){
 }
 
 /* 📥 DESCARGAR */
-window.downloadFile = async function(url){
+window.downloadFile = function(url){
 
-  try{
+  const link = document.createElement("a");
 
-    const response = await fetch(url);
-    const blob = await response.blob();
+  link.href = url;
 
-    const blobUrl =
-      window.URL.createObjectURL(blob);
+  link.setAttribute("download","foto.jpg");
 
-    const a = document.createElement("a");
+  link.setAttribute("target","_blank");
 
-    a.href = blobUrl;
-    a.download = "foto.jpg";
+  document.body.appendChild(link);
 
-    document.body.appendChild(a);
+  link.click();
 
-    a.click();
-
-    a.remove();
-
-    window.URL.revokeObjectURL(blobUrl);
-
-  }catch(error){
-
-    console.log(error);
-    alert("No se pudo descargar");
-
-  }
+  link.remove();
 
 }
 
-/* ⬆️ SUBIR SOLO IMÁGENES */
+/* ⬆️ SUBIR FOTO */
 window.uploadFile = async function(){
 
   const file =
@@ -479,12 +466,17 @@ onSnapshot(q,(snapshot)=>{
             ${foto.likes || 0}
           </div>
 
-          <div
-            onclick="downloadFile('${foto.url}')"
-            style="cursor:pointer;"
+          <a
+            href="${foto.url}"
+            download
+            target="_blank"
+            style="
+              text-decoration:none;
+              cursor:pointer;
+            "
           >
             📥
-          </div>
+          </a>
 
         </div>
 
