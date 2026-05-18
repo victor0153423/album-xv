@@ -173,12 +173,12 @@ body{
 
 <div class="upload-area">
 
+  <!-- INPUT NORMAL -->
   <input
     type="file"
     id="fileInput"
     hidden
     accept="image/*"
-    capture
     onchange="uploadFile()"
   >
 
@@ -346,7 +346,7 @@ window.downloadFile = function(url){
 
 }
 
-/* ⬆️ SUBIR FOTO O IMAGEN */
+/* ⬆️ SUBIR FOTO O GALERÍA */
 window.uploadFile = async function(){
 
   const file =
